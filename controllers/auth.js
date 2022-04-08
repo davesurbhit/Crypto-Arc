@@ -1,4 +1,5 @@
 const User = require("../models/Users");
+const ErrorResponse = require("../utils/errorResponse");
 
 //Register logic
 exports.register = async (req, res, next) => {
@@ -16,10 +17,7 @@ exports.register = async (req, res, next) => {
       user,
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
+    next(error);
   }
 };
 
@@ -28,25 +26,20 @@ exports.login = async (req, res, next) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    res
-      .status(400)
-      .json({ success: false, error: "Please provide email and password" });
+    return next(new ErrorResponse("Please Provide an email and password", 400));
   }
 
   try {
     const user = await User.findOne({ email }).select("+password");
 
     if (!user) {
-      res.status(404).json({ success: false, error: "No such user found" });
+      return next(new ErrorResponse("No Such User Found", 401));
     }
 
     const isMatch = await user.matchPasswords(password);
 
     if (!isMatch) {
-      res.status(404).json({
-        success: false,
-        error: "Invalid Credentials",
-      });
+      return next(new ErrorResponse("Invalid Credentials", 401));
     }
 
     res.status(200).json({
@@ -55,7 +48,7 @@ exports.login = async (req, res, next) => {
       user,
     });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    next(error);
   }
 };
 
